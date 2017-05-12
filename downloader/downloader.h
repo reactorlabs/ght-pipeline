@@ -86,11 +86,20 @@ public:
     public:
         /** Commit's hash. */
         std::string commit;
+
+        /** Parent commit's hash. */
+        std::string parent;
+
+        /** Name of the branch the commit belongs to. */
+        std::string branch;
+
         /** Time of the commit */
         int time;
 
-        Commit(Git::Commit const & c):
+        Commit(Git::Commit const & c, std::string const & branch, std::string const & parent):
             commit(c.hash),
+            parent(parent),
+            branch(branch),
             time(c.time) {
         }
 
@@ -106,7 +115,9 @@ public:
 
         friend std::ostream & operator << (std::ostream & s, Commit const & c) {
             s << c.commit << ","
-              << c.time;
+              << c.time  << ","
+              << "\"" << c.branch << "\","
+              << (c.parent.empty() ? "\"\"" : c.parent);
             return s;
         }
 

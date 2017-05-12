@@ -78,12 +78,14 @@ void Project::analyze(PatternList const & filter) {
             fBranches << branch << std::endl;
         std::string parent = "";
         for (auto i = commits.rbegin(), e = commits.rend(); i != e; ++i) {
-            Commit c(*i);
-            if (not commits_.insert(c).second)
+            Commit c(*i, b, parent);
+            if (not commits_.insert(c).second) {
+                parent = c.commit;
                 continue;
+            }
             // we haven't seen the commit yet, store it and analyze
             fCommits << c << std::endl;
-            analyzeCommit(filter, *i, parent, fSnapshots);
+            analyzeCommit(filter, c, parent, fSnapshots);
             parent = c.commit;
         }
     }
@@ -178,6 +180,8 @@ void Downloader::LoadPreviousRun() {
     if (not Settings::General::Incremental)
         return;
     std::string content_hashes = STR(Settings::General::Target << "/content_hashes.csv");
+    if (! isFile(content_hashes))
+        return;
     std::cout << "Loading content hashes from previous runs" << std::flush;
 
     CSVParser p(content_hashes);
@@ -213,6 +217,8 @@ void Downloader::FeedFrom(std::string const & filename) {
             break;
         ++i;
         if (x.size() == 1) {
+            if (x[0].find("http://github.com/") == 0)
+                x[0] = x[0].substr(18, x[0].size() - 18 - 4); // and .git
             Project p(x[0]);
             if (not isFile(p.fileLog()))
                 Schedule(p);
@@ -220,6 +226,8 @@ void Downloader::FeedFrom(std::string const & filename) {
         } else if (x.size() == 2) {
             try {
                 char ** c;
+                if (x[0].find("http://github.com/") == 0)
+                    x[0] = x[0].substr(18, x[0].size() - 18 - 4); // and .git
                 Project p(x[0], std::strtol(x[1].c_str(), c, 10));
                 if (not isFile(p.fileLog()))
                     Schedule(p);

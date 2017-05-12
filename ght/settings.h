@@ -58,7 +58,6 @@ public:
         static bool CompressInExtraThread;
         static int MaxCompressorThreads;
         static bool KeepRepos;
-
     };
 
     class StrideMerger {

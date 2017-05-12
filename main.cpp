@@ -18,8 +18,8 @@
 #include "sccsorter/sccsorter.h"
 
 
-std::string Settings::General::Target = "/data/ele/download";
-bool Settings::General::Incremental = true;
+std::string Settings::General::Target = "/data/julia/download";
+bool Settings::General::Incremental = false;
 unsigned Settings::General::NumThreads = 8;
 long Settings::General::DebugLimit = -1;
 long Settings::General::DebugSkip = 0;
@@ -58,7 +58,7 @@ std::string Settings::CleanerAllLang::OutputFile = "/home/peta/delete/cleaned_pr
 
 
 std::vector<std::string> Settings::Downloader::AllowPrefix = {};
-std::vector<std::string> Settings::Downloader::AllowSuffix = {".js"};
+std::vector<std::string> Settings::Downloader::AllowSuffix = {".jl"};
 std::vector<std::string> Settings::Downloader::AllowContents = { "package.json" };
 std::vector<std::string> Settings::Downloader::DenyPrefix = { "node_modles/" };
 std::vector<std::string> Settings::Downloader::DenySuffix = {};
@@ -67,7 +67,7 @@ std::vector<std::string> Settings::Downloader::DenyContents = {"/node_modules/"}
 bool Settings::Downloader::CompressFileContents = true;
 bool Settings::Downloader::CompressInExtraThread = true;
 int Settings::Downloader::MaxCompressorThreads = 4;
-bool Settings::Downloader::KeepRepos = false;
+bool Settings::Downloader::KeepRepos = true;
 
 
 //std::string Settings::StrideMerger::Folder = "/data/ecoop17/datasets/js_github_all";
@@ -108,12 +108,18 @@ void DownloadStackOverflow() {
     SOvfDownloader::Download();
 }
 
+void ExtractLatest() {
+
+
+}
+
 
 
 int main(int argc, char * argv[]) {
     try {
         std::cout << "OH HAI!" << std::endl;
         Download();
+        //ExtractLatest();
 
 
 

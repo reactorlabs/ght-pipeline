@@ -44,6 +44,8 @@ file(GLOB_RECURSE GHT_SRC
     "stridemerger/*.cpp"
     "sccsorter/*.h"
     "sccsorter/*.cpp"
+    "latest/*.h"
+    "latest/*.cpp"
 )
 
 add_executable(ght ${GHT_SRC})
