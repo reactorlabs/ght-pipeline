@@ -57,8 +57,7 @@ public:
         /** First commit made to the branch. */
         std::string firstCommit;
 
-
-        Branch(std::string name, std::string firstCommit):
+        Branch(std::string const & name, std::string const & firstCommit):
             name(name),
             firstCommit(firstCommit) {
         }
@@ -90,17 +89,19 @@ public:
         /** Parent commit's hash. */
         std::string parent;
 
-        /** Name of the branch the commit belongs to. */
-        std::string branch;
-
         /** Time of the commit */
         int time;
 
-        Commit(Git::Commit const & c, std::string const & branch, std::string const & parent):
+        Commit(Git::Commit const & c, std::string const & parent):
             commit(c.hash),
             parent(parent),
-            branch(branch),
             time(c.time) {
+        }
+
+        Commit(std::string const & hash, int time, std::string const & parent):
+            commit(hash),
+            parent(parent),
+            time(time) {
         }
 
         bool operator == (Commit const & other) const {
@@ -116,13 +117,41 @@ public:
         friend std::ostream & operator << (std::ostream & s, Commit const & c) {
             s << c.commit << ","
               << c.time  << ","
-              << "\"" << c.branch << "\","
               << (c.parent.empty() ? "\"\"" : c.parent);
             return s;
         }
 
     };
 
+
+    class BranchSnapshot {
+    public:
+        std::string branch;
+        std::string commit;
+
+        BranchSnapshot(std::string const & branch, std::string const & commit):
+            branch(branch),
+            commit(commit) {
+        }
+
+        bool operator == (BranchSnapshot const & other) const {
+            return branch == other.branch && commit == other.commit;
+        }
+
+        struct Hash {
+            std::size_t operator()(BranchSnapshot const & x) const {
+                return std::hash<std::string>()(x.commit) + std::hash<std::string>()(x.branch);
+            }
+        };
+
+        friend std::ostream & operator << (std::ostream & s, BranchSnapshot const & x) {
+            s << escape(x.branch) << ","
+              << x.commit;
+            return s;
+        }
+
+
+    };
 
     class Snapshot {
     public:
@@ -144,7 +173,14 @@ public:
             parentId(-1),
             commit(c.commit),
             relPath(relPath) {
+        }
 
+        Snapshot(long id, long contentId, long parentId, std::string const & commit, std::string const & relPath):
+            id(id),
+            contentId(contentId),
+            parentId(parentId),
+            commit(commit),
+            relPath(relPath) {
         }
 
         bool operator == (Snapshot const & other) const {
@@ -181,7 +217,7 @@ public:
 
     void initialize();
 
-    void loadPreviousRun();
+    bool loadPreviousRun();
 
     void clone(bool force = false);
 
@@ -196,6 +232,7 @@ public:
 
     void analyze(PatternList const & filter);
 
+    Project(long id);
     Project(std::string const & relativeUrl);
     Project(std::string const & relativeUrl, long id);
 
@@ -214,6 +251,16 @@ public:
     std::string fileSnapshots() const {
         return STR(path_ << "/snapshots.csv");
     }
+
+    std::string fileBranchSnapshots() const {
+        return STR(path_ << "/branchSnapshots.csv");
+    }
+
+    std::unordered_set<Branch, Branch::Hash> branches;
+    std::unordered_set<Commit, Commit::Hash> commits;
+    std::unordered_set<BranchSnapshot, BranchSnapshot::Hash> branchSnapshots;
+    std::vector<Snapshot> snapshots;
+
 
 private:
     friend class Downloader;
@@ -257,9 +304,6 @@ private:
     double snapshotsTime_;
     double deleteTime_;
 
-    std::unordered_set<Branch, Branch::Hash> branches_;
-    std::unordered_set<Commit, Commit::Hash> commits_;
-    std::vector<Snapshot> snapshots_;
     std::unordered_map<std::string, long> lastIds_;
 
 

@@ -16,6 +16,7 @@
 
 #include "stridemerger/stridemerger.h"
 #include "sccsorter/sccsorter.h"
+#include "latest/latest.h"
 
 
 std::string Settings::General::Target = "/data/julia/download";
@@ -67,7 +68,7 @@ std::vector<std::string> Settings::Downloader::DenyContents = {"/node_modules/"}
 bool Settings::Downloader::CompressFileContents = true;
 bool Settings::Downloader::CompressInExtraThread = true;
 int Settings::Downloader::MaxCompressorThreads = 4;
-bool Settings::Downloader::KeepRepos = true;
+bool Settings::Downloader::KeepRepos = false;
 
 
 //std::string Settings::StrideMerger::Folder = "/data/ecoop17/datasets/js_github_all";
@@ -108,8 +109,8 @@ void DownloadStackOverflow() {
     SOvfDownloader::Download();
 }
 
-void ExtractLatest() {
-
+void LatestSnapshot() {
+    Latest::GetLatestSnapshot();
 
 }
 
@@ -118,8 +119,8 @@ void ExtractLatest() {
 int main(int argc, char * argv[]) {
     try {
         std::cout << "OH HAI!" << std::endl;
-        Download();
-        //ExtractLatest();
+        //Download();
+        LatestSnapshot();
 
 
 

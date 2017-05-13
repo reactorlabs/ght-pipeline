@@ -18,8 +18,24 @@ void Project::initialize() {
 
 }
 
-void Project::loadPreviousRun() {
-    // TODO actually load the previous run, for now, we just
+bool Project::loadPreviousRun() {
+    try {
+        CSVParser b(fileBranches());
+        for (auto & row : b)
+            branches.insert(Branch(row[0], row[1]));
+        CSVParser c(fileCommits());
+        for (auto & row : c)
+            commits.insert(Commit(row[0], std::stoi(row[1]), row[2]));
+        CSVParser fs(fileSnapshots());
+        for (auto & row : fs)
+            snapshots.push_back(Snapshot(std::stol(row[0]), std::stol(row[1]), std::stol(row[2]), row[3], row[4]));
+        CSVParser bs(fileBranchSnapshots());
+        for (auto & row : bs)
+            branchSnapshots.insert(BranchSnapshot(row[0], row[1]));
+        return true;
+    } catch (...) {
+        return false;
+    }
 }
 
 void Project::clone(bool force) {
@@ -66,6 +82,7 @@ void Project::analyze(PatternList const & filter) {
     std::ofstream fBranches = CheckedOpen(fileBranches(), Settings::General::Incremental);
     std::ofstream fCommits = CheckedOpen(fileCommits(), Settings::General::Incremental);
     std::ofstream fSnapshots = CheckedOpen(fileSnapshots(), Settings::General::Incremental);
+    std::ofstream fBranchSnapshots = CheckedOpen(fileBranchSnapshots(), Settings::General::Incremental);
     // for all branches
     for (std::string const & b: Git::GetBranches(repoPath_)) {
         // clear the last id's buffer
@@ -74,12 +91,17 @@ void Project::analyze(PatternList const & filter) {
         std::vector<Git::Commit> commits = Git::GetCommits(repoPath_,b);
         Branch branch(b, commits.back().hash);
         // append the branch to list of branches if we haven't seen it yet
-        if (branches_.insert(branch).second)
+        if (branches.insert(branch).second)
             fBranches << branch << std::endl;
+        // create branch snapshot, if the branch snapshot has already been create, ignore the branch
+        BranchSnapshot bs(b, commits.front().hash);
+        if (not branchSnapshots.insert(bs).second)
+            continue;
+        fBranchSnapshots << bs << std::endl;
         std::string parent = "";
         for (auto i = commits.rbegin(), e = commits.rend(); i != e; ++i) {
-            Commit c(*i, b, parent);
-            if (not commits_.insert(c).second) {
+            Commit c(*i, parent);
+            if (not this->commits.insert(c).second) {
                 parent = c.commit;
                 continue;
             }
@@ -97,7 +119,7 @@ void Project::analyzeCommit(PatternList const & filter, Commit const & c, std::s
         // check if it is a language file
         if (not filter.check(obj.relPath, hasDeniedFiles_))
             continue;
-        Snapshot s(snapshots_.size(), obj.relPath, c);
+        Snapshot s(snapshots.size(), obj.relPath, c);
         // set the parent id if we have one, keep -1 if not
         auto i = lastIds_.find(s.relPath);
         if (i != lastIds_.end())
@@ -113,10 +135,22 @@ void Project::analyzeCommit(PatternList const & filter, Commit const & c, std::s
             s.contentId = Downloader::AssignContentId(SHA1(obj.hash), obj.relPath, repoPath_);
             lastIds_[s.relPath] = s.id;
         }
-        snapshots_.push_back(s);
+        snapshots.push_back(s);
         fSnapshots << s << std::endl;
         ++Downloader::snapshots_;
     }
+}
+
+Project::Project(long id):
+    id_(id),
+    url_("") {
+    while (idCounter_ < id) {
+        long old = idCounter_;
+        if (idCounter_.compare_exchange_weak(old, id))
+            break;
+    }
+    path_ = STR(Settings::General::Target << "/projects" << IdToPath(id_, "projects_") << "/" << id_);
+    repoPath_ = STR(path_ << "/repo");
 }
 
 Project::Project(std::string const & relativeUrl):
