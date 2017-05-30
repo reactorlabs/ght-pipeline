@@ -109,18 +109,18 @@ void DownloadStackOverflow() {
     SOvfDownloader::Download();
 }
 
-void LatestSnapshot() {
+/*void LatestSnapshot() {
     Latest::GetLatestSnapshot();
 
-}
+} */
 
 
 
 int main(int argc, char * argv[]) {
     try {
         std::cout << "OH HAI!" << std::endl;
-        //Download();
-        LatestSnapshot();
+        Download();
+        //LatestSnapshot();
 
 
 

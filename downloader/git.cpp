@@ -139,8 +139,8 @@ void Git::Checkout(std::string const &repoPath, std::string const & commit) {
 }
 
 
-std::vector<Git::Commit> Git::GetCommits(std::string const & repoPath, std::string const & branch) {
-    std::string cmd = STR("git log --format=\"%H %at\" \"" << branch << "\"");
+std::vector<Git::Commit> Git::GetCommits(std::string const & repoPath) {
+    std::string cmd = STR("git log --format=\"%H %at\"");
     std::string result;
     if (not execAndCapture(cmd, repoPath, result))
         throw std::ios_base::failure(STR("Command " << cmd << " failed in " << repoPath << " with message: " << result));

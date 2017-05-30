@@ -20,19 +20,12 @@ void Project::initialize() {
 
 bool Project::loadPreviousRun() {
     try {
-        CSVParser b(fileBranches());
-        for (auto & row : b)
-            branches.insert(Branch(row[0], row[1]));
         CSVParser c(fileCommits());
         for (auto & row : c)
             commits.insert(Commit(row[0], std::stoi(row[1]), row[2]));
         CSVParser fs(fileSnapshots());
         for (auto & row : fs)
             snapshots.push_back(Snapshot(std::stol(row[0]), std::stol(row[1]), std::stol(row[2]), row[3], row[4]));
-        CSVParser bs(fileBranchSnapshots());
-        for (auto & row : bs)
-            branchSnapshots.insert(BranchSnapshot(row[0], row[1]));
-        return true;
     } catch (...) {
         return false;
     }
@@ -79,37 +72,23 @@ void Project::finalize() {
 
 void Project::analyze(PatternList const & filter) {
     // open the output streams
-    std::ofstream fBranches = CheckedOpen(fileBranches(), Settings::General::Incremental);
     std::ofstream fCommits = CheckedOpen(fileCommits(), Settings::General::Incremental);
     std::ofstream fSnapshots = CheckedOpen(fileSnapshots(), Settings::General::Incremental);
-    std::ofstream fBranchSnapshots = CheckedOpen(fileBranchSnapshots(), Settings::General::Incremental);
-    // for all branches
-    for (std::string const & b: Git::GetBranches(repoPath_)) {
-        // clear the last id's buffer
-        lastIds_.clear();
-        // get all commits for the branch
-        std::vector<Git::Commit> commits = Git::GetCommits(repoPath_,b);
-        Branch branch(b, commits.back().hash);
-        // append the branch to list of branches if we haven't seen it yet
-        if (branches.insert(branch).second)
-            fBranches << branch << std::endl;
-        // create branch snapshot, if the branch snapshot has already been create, ignore the branch
-        BranchSnapshot bs(b, commits.front().hash);
-        if (not branchSnapshots.insert(bs).second)
-            continue;
-        fBranchSnapshots << bs << std::endl;
-        std::string parent = "";
-        for (auto i = commits.rbegin(), e = commits.rend(); i != e; ++i) {
-            Commit c(*i, parent);
-            if (not this->commits.insert(c).second) {
-                parent = c.commit;
-                continue;
-            }
-            // we haven't seen the commit yet, store it and analyze
+    // use the current branch as main one and get all its commits
+    std::vector<Git::Commit> commits = Git::GetCommits(repoPath_);
+
+    // parent commit
+    std::string parent = "";
+    // start from back because git returns the commits starting from latest, but we want from oldest
+    for (auto i = commits.rbegin(), e = commits.rend(); i != e; ++i) {
+        Commit c(*i, parent);
+        // if we haven't yet seen the commit, report & analyze it, do nothing if we have seen it
+        if (this->commits.insert(c).second) {
             fCommits << c << std::endl;
             analyzeCommit(filter, c, parent, fSnapshots);
-            parent = c.commit;
         }
+        // update the parent
+        parent = c.commit;
     }
 }
 

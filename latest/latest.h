@@ -1,3 +1,4 @@
+#ifdef HAHA
 #pragma "once"
 #include <unordered_set>
 
@@ -114,3 +115,5 @@ private:
 
 
 };
+
+#endif

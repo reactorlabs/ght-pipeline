@@ -13,6 +13,94 @@ The project uses `cmake`, so when you clone it, you can do something like this:
     cmake ..
     make
     
+> The downloader is a work in progress, many of the settings are hardcoded.
+
+# Downloader
+
+The dowloader produces for each project the following:
+
+`commits.csv`
+
+Contains all commits on the main branch in the following format:
+
+- commit hash
+- commit time
+- parent commit hash
+
+`snapshots.csv`
+
+Contains file snapshots for any commits on the master branch in the following format:
+
+- snapshot id (unique per project)
+- contents id (globally unique, -1 means the file has been deleted in the commit
+- parent snapshot id (unique per project), -1 means the file has been created in the commit
+- file contents hash (SHA-1) as reported by git
+- relative path of the file
+
+`log.csv`
+
+Contains log information for the downloader passes on the project. If incremental run is enabled, each downloader run appends a line to the log file.
+
+- project id
+- project rel path on github
+- flag whether the project has blacklisted files
+- time for the incremental resume phase
+- time required to clone the project
+- time required to download the metadata
+- time required to analyze file snapshots
+- time required to delete the project
+
+`metadata.json`
+
+Metadata in JSON format including headers, as obtained from github.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# old stuff
+
 You can now run the respective tools, i.e.:
 
     ./cleaner

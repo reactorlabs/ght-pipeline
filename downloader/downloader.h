@@ -16,70 +16,8 @@
 
 #include "git.h"
 
-//namespace xx  {
-
-
-/**
-0:01:26:53      done 0               errors 0
-[ 0]S:0
-total bytes: 371.67M   unique files: 18052
-
-// on VM's disk
-
-0:01:08:08      done 0               errors 0
-[ 0]S:0
-total bytes: 639.48M   unique files: 26743
-
-// fixed hashes
-
-0:00:20:08      done 0               errors 0
-[ 0]S:0
-total bytes: 484.49M   unique files: 23426
-
-// monday morning -- fixed hashes
-
-0:00:11:43      done 0               errors 0
-[ 0]S:0
-total bytes: 371.20M   unique files: 18000
-
-
-*/
-
-
 class Project {
 public:
-
-    class Branch {
-    public:
-        /** Branch name. */
-        std::string name;
-
-        /** First commit made to the branch. */
-        std::string firstCommit;
-
-        Branch(std::string const & name, std::string const & firstCommit):
-            name(name),
-            firstCommit(firstCommit) {
-        }
-
-        bool operator == (Branch const & other) const {
-            return name == other.name and firstCommit == other.firstCommit;
-        }
-
-        struct Hash {
-            std::size_t operator()(Branch const & x) const {
-                return std::hash<std::string>()(x.name) + std::hash<std::string>()(x.firstCommit);
-            }
-        };
-
-        friend std::ostream & operator << (std::ostream & s, Branch const & b) {
-            s << escape(b.name) << ","
-              << b.firstCommit;
-            return s;
-        }
-
-    };
-
 
     class Commit {
     public:
@@ -123,35 +61,6 @@ public:
 
     };
 
-
-    class BranchSnapshot {
-    public:
-        std::string branch;
-        std::string commit;
-
-        BranchSnapshot(std::string const & branch, std::string const & commit):
-            branch(branch),
-            commit(commit) {
-        }
-
-        bool operator == (BranchSnapshot const & other) const {
-            return branch == other.branch && commit == other.commit;
-        }
-
-        struct Hash {
-            std::size_t operator()(BranchSnapshot const & x) const {
-                return std::hash<std::string>()(x.commit) + std::hash<std::string>()(x.branch);
-            }
-        };
-
-        friend std::ostream & operator << (std::ostream & s, BranchSnapshot const & x) {
-            s << escape(x.branch) << ","
-              << x.commit;
-            return s;
-        }
-
-
-    };
 
     class Snapshot {
     public:
@@ -256,9 +165,7 @@ public:
         return STR(path_ << "/branchSnapshots.csv");
     }
 
-    std::unordered_set<Branch, Branch::Hash> branches;
     std::unordered_set<Commit, Commit::Hash> commits;
-    std::unordered_set<BranchSnapshot, BranchSnapshot::Hash> branchSnapshots;
     std::vector<Snapshot> snapshots;
 
 
