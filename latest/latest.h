@@ -1,6 +1,6 @@
-#ifdef HAHA
 #pragma "once"
 #include <unordered_set>
+#include <climits>
 
 #include "include/csv.h"
 #include "ght/settings.h"
@@ -47,7 +47,7 @@ private:
             if (! p.loadPreviousRun())
                 throw "Bad project.";
 
-            Project::Commit const * c = latestMasterCommit(p);
+            Project::Commit c = latestCommit(p);
 
             emitLatestFiles(c, p);
 
@@ -63,57 +63,42 @@ private:
 
     }
 
-    Project::Commit const * latestMasterCommit(Project const & p) {
-        Project::Commit const * result = nullptr;
-        for (auto const & bs : p.branchSnapshots) {
-            if (bs.branch != "origin/master")
-                continue;
-            auto i = p.commits.find(Project::Commit(bs.commit, 0, ""));
-            if (i == p.commits.end())
-                throw "Latest master commit not captured.";
-            if (result == nullptr || i->time > result->time)
-                result = &(*i);
-        }
-        if (result == nullptr)
-            throw "Project does not have master branch";
+    Project::Commit latestCommit(Project const & p) {
+        Project::Commit result("", INT_MAX, "");
+        for (auto const & c : p.commits)
+            if (result.time > c.time)
+                result = c;
         return result;
     }
 
-    void emitLatestFiles(Project::Commit const * c, Project const & p) {
+    void emitLatestFiles(Project::Commit c, Project const & p) {
         std::unordered_set<std::string> visited;
         while (true) {
             for (Project::Snapshot const & s : p.snapshots) {
-                if (s.commit == c->commit) {
+                if (s.commit == c.commit) {
+                    // if we haven't seen the file
                     if (visited.insert(s.relPath).second) {
+                        // and if the file is not deleted by the commit, emit it
                         if (s.contentId != -1) {
                             snapshotFiles_ << p.id() << ","
                                            << s.id << ","
                                            << s.contentId << ","
                                            << escape(s.relPath) << ","
-                                           << c->time << std::endl;
+                                           << c.time << std::endl;
                         }
                     }
                 }
             }
-            auto i = p.commits.find(Project::Commit(c->parent, 0, ""));
+            // move to the parent commit, or terminate if there is no parent commit
+            auto i = p.commits.find(Project::Commit(c.parent, 0, ""));
             if (i == p.commits.end())
                 break;
-            c = & *i;
+            c = *i;
         }
     }
-
-
-
-
 
     long numProjects_;
     long errors_;
     std::ofstream snapshotFiles_;
 
-
-
-
-
 };
-
-#endif

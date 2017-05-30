@@ -21,7 +21,7 @@
 
 std::string Settings::General::Target = "/data/julia/download";
 bool Settings::General::Incremental = false;
-unsigned Settings::General::NumThreads = 8;
+unsigned Settings::General::NumThreads = 4;
 long Settings::General::DebugLimit = -1;
 long Settings::General::DebugSkip = 0;
 std::vector<std::string> Settings::General::ApiTokens;
@@ -67,8 +67,8 @@ std::vector<std::string> Settings::Downloader::DenyContents = {"/node_modules/"}
 
 bool Settings::Downloader::CompressFileContents = true;
 bool Settings::Downloader::CompressInExtraThread = true;
-int Settings::Downloader::MaxCompressorThreads = 4;
-bool Settings::Downloader::KeepRepos = false;
+int Settings::Downloader::MaxCompressorThreads = 2;
+bool Settings::Downloader::KeepRepos = true;
 
 
 //std::string Settings::StrideMerger::Folder = "/data/ecoop17/datasets/js_github_all";
