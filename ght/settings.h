@@ -18,6 +18,10 @@ public:
         static long DebugSkip;
         static std::vector<std::string> ApiTokens;
 
+        /** Number of files per token to be used.
+
+          This is to prevent long response times of the filesystems if too many files are in same directory. Setting this to 0 bypasses the hierarchy and stores all files and projects on same level.
+         */
         static unsigned FilesPerFolder;
 
 
@@ -58,6 +62,9 @@ public:
         static bool CompressInExtraThread;
         static int MaxCompressorThreads;
         static bool KeepRepos;
+        /** If true, github metadata is stored including the HTTP headers which allows skipping unchanged projects in the future inceremental downloads.
+         */
+        static bool KeepMetadataHeaders;
     };
 
     class StrideMerger {
@@ -71,6 +78,9 @@ public:
 /** Takes given id and produces a path from it that would make sure the MaxFilesPerDirectory limit is not broken assuming full utilization of the ids.
 */
 inline std::string IdToPath(long id, std::string const & prefix = "") {
+    // when files per folder is disabled
+    if (Settings::General::FilesPerFolder == 0)
+        return "";
     std::string result = "";
     // get the directory id first, which chops the ids into chunks of MaxEntriesPerDirectorySize
     long dirId = id / Settings::General::FilesPerFolder;
@@ -84,52 +94,9 @@ inline std::string IdToPath(long id, std::string const & prefix = "") {
 
 
 inline bool IdPathFull(long id) {
+    if (Settings::General::FilesPerFolder == 0)
+        return false;
     return ((id + 1) % Settings::General::FilesPerFolder) == 0;
 }
 
-
-
-
-/**
-class Settings : public settings::Settings {
-public:
-    class General : public settings::Section {
-    public:
-        settings::String target;
-        General() {
-            registerValue(target, "target", "Determines the path where the inputs and results of the program lie. ");
-        }
-    };
-
-    class Cleaner : public settings::Command {
-    public:
-        settings::String inputFile;
-        settings::TypedArray<std::string> languages;
-        settings::Bool includeForks;
-
-        Cleaner():
-            includeForks(false) {
-            registerValue(inputFile, {"inputFile", "if"}, "Path to the CSV file with potential projects to be downloaded from github in the ghtorrent format.");
-            registerValue(languages, {"language", "l"}, "Project languages, as reported by github that should be considered.");
-            registerValue(includeForks, {"forks"}, "If specified, forked projects will be included in the selection");
-        }
-
-    };
-
-    class Downloader : public settings::Command {
-
-    };
-
-
-    General general;
-    Cleaner cleaner;
-    Downloader downloader;
-
-    Settings() {
-        registerSection(general, "general", "Generic configuration details applicable to all commands.");
-        registerSection(cleaner, "clean", "Reads the GH torrent project list and extracts selected projects for further stages.");
-        registerSection(downloader, "download", "Downloads the previously selected github projects into the target directory.");
-    }
-
-}; */
 

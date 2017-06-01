@@ -52,7 +52,9 @@ void Project::loadMetadata() {
     // get the current API token (remember we are rotating them)
     std::string const & token = Settings::General::GetNextApiToken();
     // construct the API request
-    std::string req = STR("curl -i -s " << apiUrl() << " -H \"Authorization: token " << token << "\"");
+    std::string req = (Settings::Downloader::KeepMetadataHeaders) ?
+                STR("curl -i -s " << apiUrl() << " -H \"Authorization: token " << token << "\"") :
+                STR("curl -s " << apiUrl() << " -H \"Authorization: token " << token << "\"");
     // exec, the captured string is the result
     req = execAndCapture(req, path_);
     // TODO analyze the results somehow

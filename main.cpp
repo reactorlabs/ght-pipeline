@@ -69,6 +69,7 @@ bool Settings::Downloader::CompressFileContents = true;
 bool Settings::Downloader::CompressInExtraThread = true;
 int Settings::Downloader::MaxCompressorThreads = 2;
 bool Settings::Downloader::KeepRepos = true;
+bool Settings::Downloader::KeepMetadataHeaders = true;
 
 
 //std::string Settings::StrideMerger::Folder = "/data/ecoop17/datasets/js_github_all";

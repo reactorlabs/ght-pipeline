@@ -15,7 +15,6 @@
 #define ASSERT_(cond) if (false) std::stringstream()
 #endif
 
-
 namespace settings {
     class Map;
     class Command;
