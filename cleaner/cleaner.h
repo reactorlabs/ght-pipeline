@@ -15,9 +15,18 @@
 
 class Cleaner : public Worker<Cleaner, std::string> {
 public:
+    static std::vector<std::string> InputFiles;
+    static std::vector<std::string> AllowedLanguages;
+    static bool AllowForks;
+    static bool Incremental;
+    static std::string OutputDir;
+    static long DebugSkip;
+    static long DebugLimit;
+
+    static void ParseCommandLine(std::vector<std::string> const & args);
 
     static void LoadPreviousRun() {
-        if (not Settings::General::Incremental)
+        if (not Incremental)
             return;
         if (not isFile(OutputFilename())) {
             std::cout << "No previous run found" << std::endl;
@@ -39,7 +48,7 @@ public:
 
     static void Finalize() {
         // write the stamp with number of files
-        std::ofstream stamp = CheckedOpen(STR(Settings::General::Target << "/runs_cleaner.csv"), Settings::General::Incremental);
+        std::ofstream stamp = CheckedOpen(STR(OutputDir << "/runs_cleaner.csv"), Incremental);
         // the stamp contains time, total number of projects
         stamp << Timer::SecondsSinceEpoch() << ","
               << skipped_ << ","
@@ -72,7 +81,7 @@ public:
     }
 
     static std::string OutputFilename() {
-        return STR(Settings::General::Target << "/input.csv");
+        return STR(OutputDir << "/input.csv");
     }
 
 private:
@@ -95,26 +104,26 @@ private:
     }
 
     static bool IsValidLanguage(std::string const & language) {
-        if (Settings::Cleaner::AllowedLanguages.empty())
+        if (AllowedLanguages.empty())
             return true;
-        for (std::string const & l : Settings::Cleaner::AllowedLanguages)
+        for (std::string const & l : AllowedLanguages)
             if (l == language)
                 return true;
         return false;
     }
 
     void run(std::string & filename) override {
-        std::ofstream outFile(OutputFilename(), Settings::General::Incremental ? (std::fstream::out | std::fstream::app) : std::fstream::out);
+        std::ofstream outFile(OutputFilename(), Incremental ? (std::fstream::out | std::fstream::app) : std::fstream::out);
         CSVParser p(filename);
         for (auto row : p) {
-            while (Settings::General::DebugSkip > 0) {
-                --Settings::General::DebugSkip;
+            while (DebugSkip > 0) {
+                --DebugSkip;
                 continue;
             }
-            if (Settings::General::DebugLimit != -1 and total_ >= Settings::General::DebugLimit)
+            if (DebugLimit != -1 and total_ >= DebugLimit)
                 break;
             if (not IsDeleted(row)) {
-                if (Settings::Cleaner::AllowForks or not IsForked(row)) {
+                if (AllowForks or not IsForked(row)) {
                     if (IsValidLanguage(Language(row))) {
                         std::string url = RelativeUrl(row);
                         // store the project to the outfile only if we haven't yet seen the url

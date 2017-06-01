@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "utils.h"
 
 inline std::ofstream CheckedOpen(std::string const & filename, bool append = false) {
     std::ofstream result(filename, append ? (std::fstream::app | std::fstream::out) : std::fstream::out);

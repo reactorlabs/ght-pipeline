@@ -14,6 +14,10 @@
 class CleanerAllLang : public Worker<CleanerAllLang, std::string> {
 public:
 
+    static std::string OutputFile;
+
+    static void ParseCommandLine(std::vector<std::string> const & args);
+
     static void FeedFrom(std::vector<std::string> const & inputs) {
         for (auto i : inputs) {
             std::cout << i << std::endl;
@@ -63,7 +67,7 @@ private:
     }
 
     void run(std::string & filename) override {
-        std::ofstream outFile(Settings::CleanerAllLang::OutputFile, std::fstream::out);
+        std::ofstream outFile(OutputFile, std::fstream::out);
         CSVParser p(filename);
         for (auto row : p) {
             if (total_ == 0) { // skip first line

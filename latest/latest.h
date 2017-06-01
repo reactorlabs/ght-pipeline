@@ -11,6 +11,11 @@
  */
 class Latest {
 public:
+
+    static std::string OutputDir;
+
+    static void ParseCommandLine(std::vector<std::string> const & args);
+
     static void GetLatestSnapshot() {
         Latest l;
         l.analyze();
@@ -19,8 +24,8 @@ public:
 private:
 
     Latest() {
-        snapshotFiles_ = CheckedOpen(STR(Settings::General::Target << "/latest_master.csv"));
-        CSVParser p(STR(Settings::General::Target << "/runs_downloader.csv"));
+        snapshotFiles_ = CheckedOpen(STR(OutputDir << "/latest_master.csv"));
+        CSVParser p(STR(OutputDir << "/runs_downloader.csv"));
         numProjects_ = 0;
         for (auto row : p) {
             long p = std::stol(row[1]) - 1;

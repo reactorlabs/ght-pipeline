@@ -232,6 +232,26 @@ private:
 
 class Downloader : public Worker<Downloader, Project> {
 public:
+    static std::vector<std::string> AllowPrefix;
+    static std::vector<std::string> AllowSuffix;
+    static std::vector<std::string> AllowContents;
+    static std::vector<std::string> DenyPrefix;
+    static std::vector<std::string> DenySuffix;
+    static std::vector<std::string> DenyContents;
+    static bool CompressFileContents;
+    static bool CompressInExtraThread;
+    static int CompressorThreads;
+    static bool KeepRepos;
+    static bool Incremental;
+    static unsigned NumThreads;
+    static std::string OutputDir;
+    static std::string InputFile;
+    static long DebugSkip;
+    static long DebugLimit;
+
+    static void ParseCommandLine(std::vector<std::string> const & args);
+
+
     static void Initialize();
 
     static void LoadPreviousRun();
@@ -248,10 +268,7 @@ public:
 
     static ProgressReporter::Feeder GetReporterFeeder();
 
-
     static long AssignContentId(SHA1 const & hash, std::string const & relPath, std::string const & root);
-
-    static long AssignContentsId(std::string const & contets);
 
     std::string status() {
         if (currentJob_ == ' ')
@@ -274,7 +291,7 @@ private:
             p.initialize();
             // resume
             // update the project according to the previous run
-            if (Settings::General::Incremental) {
+            if (Incremental) {
                 currentJob_ = 'R';
                 p.loadPreviousRun();
             }
@@ -301,7 +318,7 @@ private:
             }
             p.finalize();
             // delete
-            if (not Settings::Downloader::KeepRepos) {
+            if (not Downloader::KeepRepos) {
                 currentJob_ = 'D';
                 p.deleteRepo();
             }

@@ -1,10 +1,30 @@
 #include "downloader.h"
+#include "github.h"
 
 #include "include/csv.h"
 #include "include/exec.h"
+#include "include/settings.h"
 
 
 #include "git.h"
+
+
+std::vector<std::string> Downloader::AllowPrefix = {};
+std::vector<std::string> Downloader::AllowSuffix = {};
+std::vector<std::string> Downloader::AllowContents = {};
+std::vector<std::string> Downloader::DenyPrefix = {};
+std::vector<std::string> Downloader::DenySuffix = {};
+std::vector<std::string> Downloader::DenyContents = {};
+
+bool Downloader::CompressFileContents = true;
+int Downloader::CompressorThreads = 2;
+bool Downloader::KeepRepos = true;
+bool Downloader::Incremental = false;
+unsigned Downloader::NumThreads = 4;
+std::string Downloader::OutputDir;
+std::string Downloader::InputFile;
+long Downloader::DebugSkip = 0;
+long Downloader::DebugLimit = -1;
 
 std::atomic<long> Project::idCounter_(0);
 
@@ -12,6 +32,34 @@ std::atomic<long> Project::idCounter_(0);
 std::atomic<long> Downloader::snapshots_(0);
 
 
+void Downloader::ParseCommandLine(std::vector<std::string> const & args) {
+    Settings s;
+    s.addOption("+p", AllowPrefix, false, "Files with given prefix will be downloaded.");
+    s.addOption("+s", AllowSuffix, false, "Files with given suffix (extension) will be downloaded.");
+    s.addOption("+c", AllowContents, false, "Files containing given string will be downloaded.");
+    s.addOption("-p", DenyPrefix, false, "Files with given prefix will be ignored.");
+    s.addOption("-s", DenySuffix, false, "Files with given suffix will be ignored.");
+    s.addOption("-c", DenyContents, false, "Files containing given string will be ignored.");
+    s.addOption("-compress", CompressFileContents, false, "If true, output files in folder will be compressed when the folder is full");
+    s.addOption("-compressorThreads", CompressorThreads, false, "Determines the number of compressor threads available, 0 for compressing in downloader thread.");
+    s.addOption("-keepRepos", KeepRepos, false, "If true, repository contents will not be deleted when the analysis is finished.");
+
+    s.addOption("-apiToken", Github::ApiTokens, false, "Github API Tokens which are rotated for the requests made to circumvent github api limitations");
+
+    s.addOption("-maxFolderSize", FolderHierarchy::FilesPerFolder, false, "Maximum number of files and directories in a single folder in the output. 0 for unlimited.");
+
+    s.addOption("-incremental", Incremental, false, "If true, the download will be incremental, i.e. keep already downloaded data");
+
+    s.addOption("-threads", NumThreads, false, "Number of concurrent threads the downloader is allowed to use");
+
+    s.addOption("-o", OutputDir, true, "Output directory where the downloaded projects & files will be stored. Also the directory that must contain the input file input.csv");
+
+    s.addOption("-debugSkip", DebugSkip, false, "Number of projects at the beginning of first input file to skip");
+    s.addOption("-debugLimit", DebugLimit, false, "Max number of projects to emit");
+    s.addOption("-input", InputFile, true, "Input file with project addresses on github");
+
+    s.parseCommandLine(args, 2);
+}
 
 void Project::initialize() {
     createPathIfMissing(path_);
@@ -42,25 +90,18 @@ void Project::clone(bool force) {
     }
     if (not Git::Clone(gitUrl(), repoPath_))
         throw std::runtime_error(STR("Unable to download project " << gitUrl() << ", id " << id_));
-
 }
 
 void Project::loadMetadata() {
     // no tokens, no metadata
-    if (Settings::General::ApiTokens.empty())
+    if (Github::ApiTokens.empty())
         return;
     // get the current API token (remember we are rotating them)
-    std::string const & token = Settings::General::GetNextApiToken();
+    std::string const & token = Github::NextApiToken();
     // construct the API request
-    std::string req = (Settings::Downloader::KeepMetadataHeaders) ?
-                STR("curl -i -s " << apiUrl() << " -H \"Authorization: token " << token << "\"") :
-                STR("curl -s " << apiUrl() << " -H \"Authorization: token " << token << "\"");
-    // exec, the captured string is the result
-    req = execAndCapture(req, path_);
-    // TODO analyze the results somehow
-
-    std::ofstream m = CheckedOpen(STR(path_ << "/metadata.json"));
-    m << req;
+    std::string req = STR("curl -D metadata.headers -s " << apiUrl() << " -H \"Authorization: token " << token << "\" -o metadata.json");
+    // exec, curl already splits headers & contents
+    exec(req, path_);
 }
 
 void Project::deleteRepo() {
@@ -68,14 +109,14 @@ void Project::deleteRepo() {
 }
 
 void Project::finalize() {
-    std::ofstream fLog = CheckedOpen(fileLog(), Settings::General::Incremental);
+    std::ofstream fLog = CheckedOpen(fileLog(), Downloader::Incremental);
     fLog << *this << std::endl;
 }
 
 void Project::analyze(PatternList const & filter) {
     // open the output streams
-    std::ofstream fCommits = CheckedOpen(fileCommits(), Settings::General::Incremental);
-    std::ofstream fSnapshots = CheckedOpen(fileSnapshots(), Settings::General::Incremental);
+    std::ofstream fCommits = CheckedOpen(fileCommits(), Downloader::Incremental);
+    std::ofstream fSnapshots = CheckedOpen(fileSnapshots(), Downloader::Incremental);
     // use the current branch as main one and get all its commits
     std::vector<Git::Commit> commits = Git::GetCommits(repoPath_);
 
@@ -130,14 +171,14 @@ Project::Project(long id):
         if (idCounter_.compare_exchange_weak(old, id))
             break;
     }
-    path_ = STR(Settings::General::Target << "/projects" << IdToPath(id_, "projects_") << "/" << id_);
+    path_ = STR(Downloader::OutputDir << "/projects" << FolderHierarchy::IdToPath(id_, "projects_") << "/" << id_);
     repoPath_ = STR(path_ << "/repo");
 }
 
 Project::Project(std::string const & relativeUrl):
     id_(idCounter_++),
     url_(relativeUrl) {
-    path_ = STR(Settings::General::Target << "/projects" << IdToPath(id_, "projects_") << "/" << id_);
+    path_ = STR(Downloader::OutputDir << "/projects" << FolderHierarchy::IdToPath(id_, "projects_") << "/" << id_);
     repoPath_ = STR(path_ << "/repo");
 }
 
@@ -150,7 +191,7 @@ Project::Project(std::string const & relativeUrl, long id):
         if (idCounter_.compare_exchange_weak(old, id))
             break;
     }
-    path_ = STR(Settings::General::Target << "/projects" << IdToPath(id_, "projects_") << "/" << id_);
+    path_ = STR(Downloader::OutputDir << "/projects" << FolderHierarchy::IdToPath(id_, "projects_") << "/" << id_);
     repoPath_ = STR(path_ << "/repo");
 }
 
@@ -175,26 +216,26 @@ std::atomic<int> Downloader::compressors_(0);
 
 void Downloader::Initialize() {
     // fill in the language filter object
-    for (auto i : Settings::Downloader::AllowPrefix)
+    for (auto i : Downloader::AllowPrefix)
         language_.allowPrefix(i);
-    for (auto i : Settings::Downloader::AllowSuffix)
+    for (auto i : Downloader::AllowSuffix)
         language_.allowSuffix(i);
-    for (auto i : Settings::Downloader::AllowContents)
+    for (auto i : Downloader::AllowContents)
         language_.allow(i);
-    for (auto i : Settings::Downloader::DenyPrefix)
+    for (auto i : Downloader::DenyPrefix)
         language_.denyPrefix(i);
-    for (auto i : Settings::Downloader::DenySuffix)
+    for (auto i : Downloader::DenySuffix)
         language_.denySuffix(i);
-    for (auto i : Settings::Downloader::DenyContents)
+    for (auto i : Downloader::DenyContents)
         language_.deny(i);
 
 }
 
 void Downloader::LoadPreviousRun() {
     // load the file contents
-    if (not Settings::General::Incremental)
+    if (not Incremental)
         return;
-    std::string content_hashes = STR(Settings::General::Target << "/content_hashes.csv");
+    std::string content_hashes = STR(OutputDir << "/content_hashes.csv");
     if (! isFile(content_hashes))
         return;
     std::cout << "Loading content hashes from previous runs" << std::flush;
@@ -213,8 +254,8 @@ void Downloader::LoadPreviousRun() {
 void Downloader::OpenOutputFiles() {
     // open the streams
     // TODO should the failed projects be suffixed with run id?
-    failedProjectsFile_ = CheckedOpen(STR(Settings::General::Target << "/failed_projects.csv"));
-    contentHashesFile_ = CheckedOpen(STR(Settings::General::Target << "/content_hashes.csv"), Settings::General::Incremental);
+    failedProjectsFile_ = CheckedOpen(STR(OutputDir << "/failed_projects.csv"));
+    contentHashesFile_ = CheckedOpen(STR(OutputDir << "/content_hashes.csv"), Incremental);
 }
 
 void Downloader::FeedFrom(std::string const & filename) {
@@ -222,13 +263,13 @@ void Downloader::FeedFrom(std::string const & filename) {
     long line = 1;
     long i = 0;
     for (auto x : p) {
-        if (Settings::General::DebugSkip > 0) {
-            --Settings::General::DebugSkip;
+        if (DebugSkip > 0) {
+            --DebugSkip;
             ++line;
             continue;
         }
         ++line;
-        if (Settings::General::DebugLimit != -1 and i >= Settings::General::DebugLimit)
+        if (DebugLimit != -1 and i >= DebugLimit)
             break;
         ++i;
         if (x.size() == 1) {
@@ -258,7 +299,7 @@ void Downloader::FeedFrom(std::string const & filename) {
 void Downloader::Finalize() {
     failedProjectsFile_.close();
     contentHashesFile_.close();
-    std::ofstream stamp = CheckedOpen(STR(Settings::General::Target << "/runs_downloader.csv"), Settings::General::Incremental);
+    std::ofstream stamp = CheckedOpen(STR(OutputDir << "/runs_downloader.csv"), Incremental);
     stamp << Timer::SecondsSinceEpoch() << ","
           << Project::idCounter_ << ","
           << ErrorTasks() << ","
@@ -311,7 +352,7 @@ long Downloader::AssignContentId(SHA1 const & hash, std::string const & relPath,
     std::string contents = LoadEntireFile(STR(root << "/" << relPath));
     bytes_ += contents.size();
     // we have a new hash now, the file contents must be stored and the contents hash file appended
-    std::string targetDir = STR(Settings::General::Target << "/files" << IdToPath(id, "files_"));
+    std::string targetDir = STR(OutputDir << "/files" << FolderHierarchy::IdToPath(id, "files_"));
     createPathIfMissing(targetDir);
     {
         std::ofstream f = CheckedOpen(STR(targetDir << "/" << id << ".raw"));
@@ -323,52 +364,8 @@ long Downloader::AssignContentId(SHA1 const & hash, std::string const & relPath,
         contentHashesFile_ << hash << "," << id << std::endl;
     }
     // compress the folder if it is full
-    if (Settings::Downloader::CompressFileContents and IdPathFull(id)) {
-        if (Settings::Downloader::CompressInExtraThread and compressors_ < Settings::Downloader::MaxCompressorThreads) {
-            std::thread t([targetDir] () {
-                CompressFiles(targetDir);
-            });
-            t.detach();
-        } else {
-            CompressFiles(targetDir);
-        }
-    }
-    return id;
-}
-
-
-
-
-
-
-long Downloader::AssignContentsId(std::string const & contents) {
-    bytes_ += contents.size();
-    SHA1 h;
-    //Hash h = Hash::Calculate(contents);
-    long id;
-    {
-        std::lock_guard<std::mutex> g(contentGuard_);
-        auto i = contentHashes_.find(h);
-        if (i != contentHashes_.end())
-            return i->second;
-        id = contentHashes_.size();
-        contentHashes_.insert(std::make_pair(h, id));
-    }
-    // we have a new hash now, the file contents must be stored and the contents hash file appended
-    std::string targetDir = STR(Settings::General::Target << "/files" << IdToPath(id, "files_"));
-    createPathIfMissing(targetDir);
-    {
-        std::ofstream f = CheckedOpen(STR(targetDir << "/" << id << ".raw"));
-        f << contents;
-    }
-    // output the mapping
-    {
-        std::lock_guard<std::mutex> g(contentFileGuard_);
-        contentHashesFile_ << h << "," << id << std::endl;
-    }
-    // compress the folder if it is full
-    if (Settings::Downloader::CompressFileContents and IdPathFull(id)) {
-        if (Settings::Downloader::CompressInExtraThread and compressors_ < Settings::Downloader::MaxCompressorThreads) {
+    if (CompressFileContents and FolderHierarchy::IdPathFull(id)) {
+        if (compressors_ < Downloader::CompressorThreads) {
             std::thread t([targetDir] () {
                 CompressFiles(targetDir);
             });
