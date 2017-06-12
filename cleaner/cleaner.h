@@ -19,7 +19,7 @@ public:
     static std::vector<std::string> AllowedLanguages;
     static bool AllowForks;
     static bool Incremental;
-    static std::string OutputDir;
+    static std::string OutputFile;
     static long DebugSkip;
     static long DebugLimit;
 
@@ -28,11 +28,11 @@ public:
     static void LoadPreviousRun() {
         if (not Incremental)
             return;
-        if (not isFile(OutputFilename())) {
+        if (not isFile(OutputFile)) {
             std::cout << "No previous run found" << std::endl;
         } else {
             std::cout << "Loading previous run" << std::endl;
-            CSVParser p(OutputFilename());
+            CSVParser p(OutputFile);
             for (auto row : p)
                 projects_.insert(row[0]);
             std::cout << "    " << projects_.size() << " existing projects added.";
@@ -47,14 +47,6 @@ public:
     }
 
     static void Finalize() {
-        // write the stamp with number of files
-        std::ofstream stamp = CheckedOpen(STR(OutputDir << "/runs_cleaner.csv"), Incremental);
-        // the stamp contains time, total number of projects
-        stamp << Timer::SecondsSinceEpoch() << ","
-              << skipped_ << ","
-              << added_ << ","
-              << total_ << ","
-              << TotalTime() << std::endl;
     }
 
     static long SkippedProjects() {
@@ -78,10 +70,6 @@ public:
               << "skipped: " << std::setw(8) << skipped_
               << "total: " << std::setw(8) << total_ << std::endl;
         };
-    }
-
-    static std::string OutputFilename() {
-        return STR(OutputDir << "/input.csv");
     }
 
 private:
@@ -113,7 +101,7 @@ private:
     }
 
     void run(std::string & filename) override {
-        std::ofstream outFile(OutputFilename(), Incremental ? (std::fstream::out | std::fstream::app) : std::fstream::out);
+        std::ofstream outFile(OutputFile, Incremental ? (std::fstream::out | std::fstream::app) : std::fstream::out);
         CSVParser p(filename);
         for (auto row : p) {
             while (DebugSkip > 0) {

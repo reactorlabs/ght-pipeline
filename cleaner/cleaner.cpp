@@ -7,7 +7,7 @@ std::vector<std::string> Cleaner::InputFiles;
 std::vector<std::string> Cleaner::AllowedLanguages;
 bool Cleaner::AllowForks = false;
 bool Cleaner::Incremental = false;
-std::string Cleaner::OutputDir;
+std::string Cleaner::OutputFile;
 long Cleaner::DebugSkip = 0;
 long Cleaner::DebugLimit = -1;
 
@@ -28,7 +28,7 @@ void Cleaner::ParseCommandLine(std::vector<std::string> const & args) {
 
     s.addOption("-incremental", Incremental, false, "If incremental, only new projects will be added to the output. Non-incremental clean overwrites previous results");
 
-    s.addOption("-o", OutputDir, true, "Output directory where the input.csv file will be created");
+    s.addOption("-o", OutputFile, true, "Output file where the filtered projects will be stored");
 
     s.addOption("-debugSkip", DebugSkip, false, "Number of projects at the beginning of first input file to skip");
     s.addOption("-debugLimit", DebugLimit, false, "Max number of projects to emit");
