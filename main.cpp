@@ -112,17 +112,17 @@ void DownloadStackOverflow() {
 
 int main(int argc, char * argv[]) {
     try {
-        std::cout << "OH HAI!" << std::endl;
-        Download();
+        //std::cout << "OH HAI!" << std::endl;
+        //Download();
 
 
 
-        /*if (argc != 4)
+        if (argc != 4)
             throw std::runtime_error("Expected tokenized file to sort!");
         int start = std::atoi(argv[1]);
         int end = std::atoi(argv[2]);
         Settings::StrideMerger::Folder = argv[3];
-        StrideMerger::Merge(start, end); */
+        StrideMerger::Merge(start, end);
 
 
         // Clean();

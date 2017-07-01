@@ -68,14 +68,14 @@ private:
 
     static void DeleteResults(std::string const & suffix) {
         std::cout << "--- deleting intermediate results for suffix " << suffix << std::endl;
-        deletePath(STR(Settings::StrideMerger::Folder << "/projects_" << suffix << ".txt"));
-        deletePath(STR(Settings::StrideMerger::Folder << "/projects_extra_" << suffix << ".txt"));
-        deletePath(STR(Settings::StrideMerger::Folder << "/files_" << suffix << ".txt"));
-        deletePath(STR(Settings::StrideMerger::Folder << "/files_extra_" << suffix << ".txt"));
-        deletePath(STR(Settings::StrideMerger::Folder << "/stats_" << suffix << ".txt"));
-        deletePath(STR(Settings::StrideMerger::Folder << "/tokenized_files_" << suffix << ".txt"));
-        deletePath(STR(Settings::StrideMerger::Folder << "/tokens_text_" << suffix << ".txt"));
-        deletePath(STR(Settings::StrideMerger::Folder << "/tokens_" << suffix << ".txt"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/projects_" << suffix << ".csv"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/projects_extra_" << suffix << ".csv"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/files_" << suffix << ".csv"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/files_extra_" << suffix << ".csv"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/stats_" << suffix << ".csv"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/tokenized_files_" << suffix << ".csv"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/tokens_text_" << suffix << ".csv"));
+        deletePath(STR(Settings::StrideMerger::Folder << "/tokens_" << suffix << ".csv"));
     }
 
     void append(std::string const & s1, std::string const & s2, std::string const & t) {
@@ -110,14 +110,14 @@ private:
       Also merges projects_extra.
      */
     void mergeProjects(std::string const & sone, std::string const & stwo, std::string const & target) {
-        std::string s1 = STR(Settings::StrideMerger::Folder << "/projects_" << sone << ".txt");
-        std::string s2 = STR(Settings::StrideMerger::Folder << "/projects_" << stwo << ".txt");
-        std::string t = STR(Settings::StrideMerger::Folder << "/projects_" << target << ".txt");
+        std::string s1 = STR(Settings::StrideMerger::Folder << "/projects_" << sone << ".csv");
+        std::string s2 = STR(Settings::StrideMerger::Folder << "/projects_" << stwo << ".csv");
+        std::string t = STR(Settings::StrideMerger::Folder << "/projects_" << target << ".csv");
         std::cout << "Merging projects.csv..." << std::endl;
         append(s1, s2, t);
-        s1 = STR(Settings::StrideMerger::Folder << "/projects_extra_" << sone << ".txt");
-        s2 = STR(Settings::StrideMerger::Folder << "/projects_extra_" << stwo << ".txt");
-        t = STR(Settings::StrideMerger::Folder << "/projects_extra_" << target << ".txt");
+        s1 = STR(Settings::StrideMerger::Folder << "/projects_extra_" << sone << ".csv");
+        s2 = STR(Settings::StrideMerger::Folder << "/projects_extra_" << stwo << ".csv");
+        t = STR(Settings::StrideMerger::Folder << "/projects_extra_" << target << ".csv");
         std::cout << "Merging projects_extra.csv..." << std::endl;
         append(s1, s2, t);
     }
@@ -127,14 +127,14 @@ private:
       Also merges files_extra
      */
     void mergeFiles(std::string const & sone, std::string const & stwo, std::string const & target) {
-        std::string s1 = STR(Settings::StrideMerger::Folder << "/files_" << sone << ".txt");
-        std::string s2 = STR(Settings::StrideMerger::Folder << "/files_" << stwo << ".txt");
-        std::string t = STR(Settings::StrideMerger::Folder << "/files_" << target << ".txt");
+        std::string s1 = STR(Settings::StrideMerger::Folder << "/files_" << sone << ".csv");
+        std::string s2 = STR(Settings::StrideMerger::Folder << "/files_" << stwo << ".csv");
+        std::string t = STR(Settings::StrideMerger::Folder << "/files_" << target << ".csv");
         std::cout << "Merging files.csv..." << std::endl;
         append(s1, s2, t);
-        s1 = STR(Settings::StrideMerger::Folder << "/files_extra_" << sone << ".txt");
-        s2 = STR(Settings::StrideMerger::Folder << "/files_extra_" << stwo << ".txt");
-        t = STR(Settings::StrideMerger::Folder << "/files_extra_" << target << ".txt");
+        s1 = STR(Settings::StrideMerger::Folder << "/files_extra_" << sone << ".csv");
+        s2 = STR(Settings::StrideMerger::Folder << "/files_extra_" << stwo << ".csv");
+        t = STR(Settings::StrideMerger::Folder << "/files_extra_" << target << ".csv");
         std::cout << "Merging files_extra.csv..." << std::endl;
         append(s1, s2, t);
 
@@ -143,9 +143,9 @@ private:
     /** All stats from first file survive, file hashes from second, not present in first are added.
      */
     void mergeStats(std::string const & sone, std::string const & stwo, std::string const & target) {
-        std::string s1 = STR(Settings::StrideMerger::Folder << "/stats_" << sone << ".txt");
-        std::string s2 = STR(Settings::StrideMerger::Folder << "/stats_" << stwo << ".txt");
-        std::string t = STR(Settings::StrideMerger::Folder << "/stats_" << target << ".txt");
+        std::string s1 = STR(Settings::StrideMerger::Folder << "/stats_" << sone << ".csv");
+        std::string s2 = STR(Settings::StrideMerger::Folder << "/stats_" << stwo << ".csv");
+        std::string t = STR(Settings::StrideMerger::Folder << "/stats_" << target << ".csv");
         std::cout << "Merging stats.csv..." << std::endl;
         std::ofstream o = CheckedOpen(t);
         std::unordered_set<std::string> fileHashes;
@@ -205,9 +205,9 @@ private:
 
 
     void mergeTokensText(std::string const & sone, std::string const & stwo, std::string const & target) {
-        std::string s1 = STR(Settings::StrideMerger::Folder << "/tokens_text_" << sone << ".txt");
-        std::string s2 = STR(Settings::StrideMerger::Folder << "/tokens_text_" << stwo << ".txt");
-        std::string t = STR(Settings::StrideMerger::Folder << "/tokens_text_" << target << ".txt");
+        std::string s1 = STR(Settings::StrideMerger::Folder << "/tokens_text_" << sone << ".csv");
+        std::string s2 = STR(Settings::StrideMerger::Folder << "/tokens_text_" << stwo << ".csv");
+        std::string t = STR(Settings::StrideMerger::Folder << "/tokens_text_" << target << ".csv");
         std::cout << "Merging tokens_text.csv..." << std::endl;
         std::ofstream o = CheckedOpen(t);
         std::unordered_map<std::string, long> tokens;
@@ -261,9 +261,9 @@ private:
     void mergeTokensCount(std::string const & sone, std::string const & stwo, std::string const & target) {
         // let's do the counts now, defensive - not assuming the ids are sequence
         std::unordered_map<long, long> counts;
-        std::string s1 = STR(Settings::StrideMerger::Folder << "/tokens_" << sone << ".txt");
-        std::string s2 = STR(Settings::StrideMerger::Folder << "/tokens_" << stwo << ".txt");
-        std::string t = STR(Settings::StrideMerger::Folder << "/tokens_" << target << ".txt");
+        std::string s1 = STR(Settings::StrideMerger::Folder << "/tokens_" << sone << ".csv");
+        std::string s2 = STR(Settings::StrideMerger::Folder << "/tokens_" << stwo << ".csv");
+        std::string t = STR(Settings::StrideMerger::Folder << "/tokens_" << target << ".csv");
         std::cout << "Merging tokens.csv..." << std::endl;
         long l1 = 0;
         long l2 = 0;
@@ -335,10 +335,10 @@ private:
 
     void mergeTokenizedFiles(std::string const & sone, std::string const & stwo, std::string const & target) {
         std::unordered_set<std::string> tokenHashes;
-        std::string s1 = STR(Settings::StrideMerger::Folder << "/tokenized_files_" << sone << ".txt");
-        std::string s2 = STR(Settings::StrideMerger::Folder << "/tokenized_files_" << stwo << ".txt");
-        std::string t = STR(Settings::StrideMerger::Folder << "/tokenized_files_" << target << ".txt");
-        std::cout << "Merging tokens.csv..." << std::endl;
+        std::string s1 = STR(Settings::StrideMerger::Folder << "/tokenized_files_" << sone << ".csv");
+        std::string s2 = STR(Settings::StrideMerger::Folder << "/tokenized_files_" << stwo << ".csv");
+        std::string t = STR(Settings::StrideMerger::Folder << "/tokenized_files_" << target << ".csv");
+        std::cout << "Merging tokenized files.csv..." << std::endl;
         std::ofstream o = CheckedOpen(t);
         long l1 = 0;
         long l2 = 0;
@@ -351,7 +351,7 @@ private:
         // get rid of #@#
         (*i1)[5] = (*i1)[5].substr(3);
         (*i2)[5] = (*i2)[5].substr(3);
-        while (i1 != e1 and i2 != e2) {
+        while (i1 != e1 or i2 != e2) {
             long index1 = (i1 == e1) ? LONG_MAX : std::stol((*i1)[1]);
             long index2 = (i2 == e2) ? LONG_MAX : std::stol((*i2)[1]);
             if (index1 < index2) {
